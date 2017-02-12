@@ -22,8 +22,8 @@ LiquidCrystal_I2C lcd(0x3F,2,1,0,4,5,6,7,3, POSITIVE);
 
 //////////////////////
 // SD
-const String DATA_FILEPATH = "Datalog.csv";
-const char HEADER[50] = "TIMESTAMP,TEMPERATURA,UMIDADE";
+const String DATA_FILEPATH = "Datalog3.csv";
+const char HEADER[60] = "TIMESTAMP,TEMPERATURA,UMIDADE,EXAUSTOR,FAN_SLEEP,FAN_ACTIVE";
 File data_file;
 
 //////////////////////
@@ -37,6 +37,7 @@ int const DELAY_N = 200;
 int const UMID_THRESH = 60;
 int const FAN_SLEEP_THRESH = 45;
 int fan_sleep_counter = 0;
+int fan_active = 0;
 String timestamp;
 String last_timestamp;
 
@@ -64,8 +65,6 @@ void loop(){
     timestamp = timeRTC();
     delay(DELAY_N);
   }
-
-  fan_sleep_counter++;
   
   last_timestamp = timestamp;
   
@@ -80,7 +79,13 @@ void loop(){
   show_data_temp_humid(temp, humid);
   write_data(temp, humid, timestamp);
   control_fan(humid);
-  
+
+  if (digitalRead(PIN_FAN)){
+        Serial.println("EXAUSTORRRRRRRRRR");
+
+  } else{
+        Serial.println("EXAUSTOR DESLIGADO");
+  }
   
 }
 
@@ -128,15 +133,28 @@ void setup_dht(){
 void control_fan(float humid){
   Serial.print("fan_sleep_counter: ");
   Serial.println(fan_sleep_counter);
+  Serial.print("fan_active_counter: ");
+  Serial.println(fan_active);
+  
   if (humid >= UMID_THRESH && fan_sleep_counter > FAN_SLEEP_THRESH){
     digitalWrite(PIN_FAN, HIGH);
-  
-  }else if (humid < UMID_THRESH && digitalRead(PIN_FAN) == HIGH){
+      
+  }else if (humid < UMID_THRESH){
     digitalWrite(PIN_FAN, LOW);
+    
+  }
+
+
+  if (digitalRead(PIN_FAN) == HIGH){
+    fan_active++;
     fan_sleep_counter = 0;
+  } else {
+    fan_active = 0;
+    fan_sleep_counter++;
   }
 
   
+
 }
 
 void show_data_temp_humid(float t, float h){
@@ -194,12 +212,25 @@ void setup_lcd_t_u(){
 
 void write_data(float temp, float humid, String timestamp){
   data_file = SD.open(DATA_FILEPATH, FILE_WRITE);
+  //TIMESTAMP,TEMPERATURA,UMIDADE,EXAUSTOR,FAN_SLEEP,FAN_ACTIVE
   if (data_file){
       data_file.println(timestamp);
       data_file.println(",");
       data_file.println(temp);
       data_file.println(",");
       data_file.println(humid);
+      data_file.println(",");
+      
+      if (digitalRead(PIN_FAN)){
+        data_file.println("EX_ON");
+      } else{
+        data_file.println("EX_OFF");
+      }
+
+      data_file.println(",");
+      data_file.println(fan_sleep_counter);
+      data_file.println(",");
+      data_file.println(fan_active);
       
       Serial.println("SD OK!");
       lcd.setCursor(15,0);
