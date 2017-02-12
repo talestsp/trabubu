@@ -14,7 +14,7 @@ byte zero = 0x00;
 // PINS
 const int SD_CS_PIN = 10;
 const int DHT_PIN = 9;
-
+const int PIN_FAN = 8;
 
 //////////////////////
 // LCD
@@ -31,11 +31,19 @@ File data_file;
 #define DHTTYPE DHT22
 DHT dht(DHT_PIN, DHTTYPE);
 
+//////////////////////
+// GLOBAL VARIABLES
+int const DELAY_N = 1000;
+int const UMID_THRESH = 60;
+int const FAN_SLEEP_THRESH = 45;
+int fan_sleep_counter = 0;
 
 
 void setup()
 {
   Serial.begin(9600);
+  pinMode(PIN_FAN, OUTPUT);
+  
   setup_rtc();
   setup_lcd();
   setup_sd();
@@ -47,16 +55,21 @@ void setup()
 }
 
 void loop(){
-  delay(1000);
+  delay(DELAY_N);
+  
+  Serial.println("\n");
+  Serial.println("*******************");
+
   Serial.println(timeRTC());
+  
+  fan_sleep_counter = fan_sleep_counter + (DELAY_N / 1000);
 
   float humid = dht.readHumidity();
   float temp = dht.readTemperature();
   String timestamp = timeRTC();
-
   show_data_temp_humid(temp, humid);
-  
   write_data(temp, humid, timestamp);
+  control_fan(humid);
   
   
 }
@@ -103,6 +116,20 @@ void setup_dht(){
   dht.begin();
 }
 
+void control_fan(float humid){
+  Serial.print("fan_sleep_counter: ");
+  Serial.println(fan_sleep_counter);
+  if (humid >= UMID_THRESH && fan_sleep_counter > FAN_SLEEP_THRESH){
+    digitalWrite(PIN_FAN, HIGH);
+  
+  }else if (humid < UMID_THRESH && digitalRead(PIN_FAN) == HIGH){
+    digitalWrite(PIN_FAN, LOW);
+    fan_sleep_counter = 0;
+  }
+
+  
+}
+
 void show_data_temp_humid(float t, float h){
     if (isnan(h) || isnan(t))
   {
@@ -110,19 +137,23 @@ void show_data_temp_humid(float t, float h){
   }
   
   if (isnan(t)){
-    lcd.setCursor(7,0);
+    lcd.setCursor(6,0);
     lcd.print("fail     ");
   }else{
-    lcd.setCursor(7,0);
-    lcd.print(t); 
+    lcd.setCursor(6,0);
+    lcd.print(t);
+    lcd.setCursor(10,0);
+    lcd.print(" ");
   }
   
   if (isnan(h)){
-    lcd.setCursor(7,1);
+    lcd.setCursor(6,1);
     lcd.print("fail     ");
   }else{
-    lcd.setCursor(7,1);
-    lcd.print(h);    
+    lcd.setCursor(6,1);
+    lcd.print(h);
+    lcd.setCursor(10,1);
+    lcd.print(" ");
   }
 }
 
@@ -141,14 +172,14 @@ void setup_lcd_t_u(){
   lcd.createChar(0, grau); 
   // Informacoes iniciais no display
   lcd.setCursor(0,0);
-  lcd.print("Temp : ");
-  lcd.setCursor(13,0);
+  lcd.print("Temp: ");
+  lcd.setCursor(11,0);
   // Mostra o simbolo do grau
   lcd.write(byte(0));
   lcd.print("C");
   lcd.setCursor(0,1);
-  lcd.print("Umid : ");
-  lcd.setCursor(13,1);
+  lcd.print("Umid: ");
+  lcd.setCursor(11,1);
   lcd.print("%");
 }
 
@@ -162,8 +193,12 @@ void write_data(float temp, float humid, String timestamp){
       data_file.println(humid);
       
       Serial.println("SD OK!");
+      lcd.setCursor(15,0);
+      lcd.print("o");
   } else{
-    Serial.println("SD ERRO!");
+      Serial.println("SD ERRO!");
+      lcd.setCursor(15,0);
+      lcd.print("f");
   }
   data_file.close();
 }
