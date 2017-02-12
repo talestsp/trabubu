@@ -33,10 +33,13 @@ DHT dht(DHT_PIN, DHTTYPE);
 
 //////////////////////
 // GLOBAL VARIABLES
-int const DELAY_N = 1000;
+int const DELAY_N = 200;
 int const UMID_THRESH = 60;
 int const FAN_SLEEP_THRESH = 45;
 int fan_sleep_counter = 0;
+String timestamp;
+String last_timestamp;
+
 
 
 void setup()
@@ -55,18 +58,25 @@ void setup()
 }
 
 void loop(){
-  delay(DELAY_N);
+  timestamp = timeRTC();
+  
+  while(timestamp == last_timestamp){
+    timestamp = timeRTC();
+    delay(DELAY_N);
+  }
+
+  fan_sleep_counter++;
+  
+  last_timestamp = timestamp;
   
   Serial.println("\n");
   Serial.println("*******************");
 
   Serial.println(timeRTC());
-  
-  fan_sleep_counter = fan_sleep_counter + (DELAY_N / 1000);
 
   float humid = dht.readHumidity();
   float temp = dht.readTemperature();
-  String timestamp = timeRTC();
+  
   show_data_temp_humid(temp, humid);
   write_data(temp, humid, timestamp);
   control_fan(humid);
@@ -86,7 +96,6 @@ void setup_lcd(){
   lcd.setCursor(0,0);
   
 }
-
 
 void setup_rtc(){
     Wire.begin();
