@@ -22,7 +22,7 @@ LiquidCrystal_I2C lcd(0x3F,2,1,0,4,5,6,7,3, POSITIVE);
 
 //////////////////////
 // SD
-const String DATA_FILEPATH = "Datalog4.csv";
+const String DATA_FILEPATH = "Datalog5.csv";
 const char HEADER[60] = "TIMESTAMP,TEMPERATURA,UMIDADE,EXAUSTOR,FAN_SLEEP,FAN_ACTIVE";
 File data_file;
 
@@ -214,7 +214,7 @@ void write_data(float temp, float humid, String timestamp){
   data_file = SD.open(DATA_FILEPATH, FILE_WRITE);
   //TIMESTAMP,TEMPERATURA,UMIDADE,EXAUSTOR,FAN_SLEEP,FAN_ACTIVE
   if (data_file){
-      data_file.println(timestamp);
+      data_file.print(timestamp);
       data_file.print(",");
       data_file.print(temp);
       data_file.print(",");
@@ -235,12 +235,12 @@ void write_data(float temp, float humid, String timestamp){
       data_file.println("");
       
       Serial.println("SD OK!");
-      lcd.setCursor(15,0);
-      lcd.print("o");
+      lcd.setCursor(14,0);
+      lcd.print("sd");
   } else{
       Serial.println("SD ERRO!");
-      lcd.setCursor(15,0);
-      lcd.print("f");
+      lcd.setCursor(14,0);
+      lcd.print("ff");
   }
   data_file.close();
 }
