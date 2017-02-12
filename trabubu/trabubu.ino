@@ -22,7 +22,7 @@ LiquidCrystal_I2C lcd(0x3F,2,1,0,4,5,6,7,3, POSITIVE);
 
 //////////////////////
 // SD
-const String DATA_FILEPATH = "Datalog3.csv";
+const String DATA_FILEPATH = "Datalog4.csv";
 const char HEADER[60] = "TIMESTAMP,TEMPERATURA,UMIDADE,EXAUSTOR,FAN_SLEEP,FAN_ACTIVE";
 File data_file;
 
@@ -215,22 +215,24 @@ void write_data(float temp, float humid, String timestamp){
   //TIMESTAMP,TEMPERATURA,UMIDADE,EXAUSTOR,FAN_SLEEP,FAN_ACTIVE
   if (data_file){
       data_file.println(timestamp);
-      data_file.println(",");
-      data_file.println(temp);
-      data_file.println(",");
-      data_file.println(humid);
-      data_file.println(",");
+      data_file.print(",");
+      data_file.print(temp);
+      data_file.print(",");
+      data_file.print(humid);
+      data_file.print(",");
       
       if (digitalRead(PIN_FAN)){
-        data_file.println("EX_ON");
+        data_file.print("EX_ON");
       } else{
-        data_file.println("EX_OFF");
+        data_file.print("EX_OFF");
       }
 
-      data_file.println(",");
-      data_file.println(fan_sleep_counter);
-      data_file.println(",");
-      data_file.println(fan_active);
+      data_file.print(",");
+      data_file.print(fan_sleep_counter);
+      data_file.print(",");
+      data_file.print(fan_active);
+
+      data_file.println("");
       
       Serial.println("SD OK!");
       lcd.setCursor(15,0);
