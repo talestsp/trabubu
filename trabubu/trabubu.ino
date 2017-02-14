@@ -23,8 +23,8 @@ LiquidCrystal_I2C lcd(0x3F,2,1,0,4,5,6,7,3, POSITIVE);
 
 //////////////////////
 // SD
-const String DATA_FILEPATH = "Datalog2.csv";
-const char HEADER[75] = "TIMESTAMP,TEMPERATURA,UMIDADE,UMID_THRESH,EXAUSTOR,FAN_SLEEP,FAN_ACTIVE";
+const String DATA_FILEPATH = "Datalog4.csv";
+const char HEADER[90] = "TIMESTAMP,TEMPERATURA,UMIDADE,EXAUSTOR,FAN_ACTIVE,FAN_SLEEP,UMID_THRESH,FAN_SLEEP_THRESH";
 File data_file;
 
 //////////////////////
@@ -35,8 +35,8 @@ DHT dht(DHT_PIN, DHTTYPE);
 //////////////////////
 // GLOBAL VARIABLES
 int const DELAY_N = 500;
-int const UMID_THRESH = 60;
-int const FAN_SLEEP_THRESH = 45;
+int const UMID_THRESH = 71;
+int const FAN_SLEEP_THRESH = 600;
 int fan_sleep_counter = 0;
 int fan_active = 0;
 String timestamp;
@@ -213,7 +213,7 @@ void setup_lcd_t_u(){
 
 void write_data(float temp, float humid, String timestamp){
   data_file = SD.open(DATA_FILEPATH, FILE_WRITE);
-  //TIMESTAMP,TEMPERATURA,UMIDADE,UMID_THRESH,EXAUSTOR,FAN_SLEEP,FAN_ACTIVE
+  //TIMESTAMP,TEMPERATURA,UMIDADE,EXAUSTOR,FAN_ACTIVE,FAN_SLEEP,UMID_THRESH,FAN_SLEEP_THRESH
   if (data_file){
       data_file.print(timestamp);
       data_file.print(",");
@@ -221,19 +221,23 @@ void write_data(float temp, float humid, String timestamp){
       data_file.print(",");
       data_file.print(humid);
       data_file.print(",");
-      data_file.print(UMID_THRESH);
-      data_file.print(",");
       
       if (digitalRead(FAN_PIN)){
         data_file.print("EX_ON");
       } else{
         data_file.print("EX_OFF");
       }
-
+      
+      data_file.print(",");
+      data_file.print(fan_active);
       data_file.print(",");
       data_file.print(fan_sleep_counter);
       data_file.print(",");
-      data_file.print(fan_active);
+      data_file.print(UMID_THRESH);
+      data_file.print(",");
+      data_file.print(FAN_SLEEP_THRESH);
+      
+
 
       data_file.println("");
       
