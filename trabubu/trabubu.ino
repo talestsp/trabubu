@@ -14,7 +14,8 @@ byte zero = 0x00;
 // PINS
 const int SD_CS_PIN = 10;
 const int DHT_PIN = 9;
-const int PIN_FAN = 8;
+const int FAN_PIN = 8;
+const int PIN_ = 8;
 
 //////////////////////
 // LCD
@@ -22,8 +23,8 @@ LiquidCrystal_I2C lcd(0x3F,2,1,0,4,5,6,7,3, POSITIVE);
 
 //////////////////////
 // SD
-const String DATA_FILEPATH = "Datalog5.csv";
-const char HEADER[60] = "TIMESTAMP,TEMPERATURA,UMIDADE,EXAUSTOR,FAN_SLEEP,FAN_ACTIVE";
+const String DATA_FILEPATH = "Datalog2.csv";
+const char HEADER[75] = "TIMESTAMP,TEMPERATURA,UMIDADE,UMID_THRESH,EXAUSTOR,FAN_SLEEP,FAN_ACTIVE";
 File data_file;
 
 //////////////////////
@@ -33,7 +34,7 @@ DHT dht(DHT_PIN, DHTTYPE);
 
 //////////////////////
 // GLOBAL VARIABLES
-int const DELAY_N = 200;
+int const DELAY_N = 500;
 int const UMID_THRESH = 60;
 int const FAN_SLEEP_THRESH = 45;
 int fan_sleep_counter = 0;
@@ -46,7 +47,7 @@ String last_timestamp;
 void setup()
 {
   Serial.begin(9600);
-  pinMode(PIN_FAN, OUTPUT);
+  pinMode(FAN_PIN, OUTPUT);
   
   setup_rtc();
   setup_lcd();
@@ -80,7 +81,7 @@ void loop(){
   write_data(temp, humid, timestamp);
   control_fan(humid);
 
-  if (digitalRead(PIN_FAN)){
+  if (digitalRead(FAN_PIN)){
         Serial.println("EXAUSTORRRRRRRRRR");
 
   } else{
@@ -137,15 +138,15 @@ void control_fan(float humid){
   Serial.println(fan_active);
   
   if (humid >= UMID_THRESH && fan_sleep_counter > FAN_SLEEP_THRESH){
-    digitalWrite(PIN_FAN, HIGH);
+    digitalWrite(FAN_PIN, HIGH);
       
   }else if (humid < UMID_THRESH){
-    digitalWrite(PIN_FAN, LOW);
+    digitalWrite(FAN_PIN, LOW);
     
   }
 
 
-  if (digitalRead(PIN_FAN) == HIGH){
+  if (digitalRead(FAN_PIN) == HIGH){
     fan_active++;
     fan_sleep_counter = 0;
   } else {
@@ -165,7 +166,7 @@ void show_data_temp_humid(float t, float h){
   
   if (isnan(t)){
     lcd.setCursor(6,0);
-    lcd.print("fail     ");
+    lcd.print("fail");
   }else{
     lcd.setCursor(6,0);
     lcd.print(t);
@@ -175,7 +176,7 @@ void show_data_temp_humid(float t, float h){
   
   if (isnan(h)){
     lcd.setCursor(6,1);
-    lcd.print("fail     ");
+    lcd.print("fail");
   }else{
     lcd.setCursor(6,1);
     lcd.print(h);
@@ -212,7 +213,7 @@ void setup_lcd_t_u(){
 
 void write_data(float temp, float humid, String timestamp){
   data_file = SD.open(DATA_FILEPATH, FILE_WRITE);
-  //TIMESTAMP,TEMPERATURA,UMIDADE,EXAUSTOR,FAN_SLEEP,FAN_ACTIVE
+  //TIMESTAMP,TEMPERATURA,UMIDADE,UMID_THRESH,EXAUSTOR,FAN_SLEEP,FAN_ACTIVE
   if (data_file){
       data_file.print(timestamp);
       data_file.print(",");
@@ -220,8 +221,10 @@ void write_data(float temp, float humid, String timestamp){
       data_file.print(",");
       data_file.print(humid);
       data_file.print(",");
+      data_file.print(UMID_THRESH);
+      data_file.print(",");
       
-      if (digitalRead(PIN_FAN)){
+      if (digitalRead(FAN_PIN)){
         data_file.print("EX_ON");
       } else{
         data_file.print("EX_OFF");
