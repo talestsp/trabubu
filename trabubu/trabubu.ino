@@ -146,7 +146,7 @@ void control_fan(float humid){
     fan_sleep_counter = 0;
   } else {
     fan_active = 0;
-    fan_sleep_counter = fan_sleep_counter++;
+    fan_sleep_counter++;
   }
 }
 
