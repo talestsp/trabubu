@@ -15,7 +15,8 @@ byte zero = 0x00;
 const short SD_CS_PIN = 10;
 const short DHT_PIN = 9;
 const short FAN_PIN = 8;
-const short LCD_LIGHT_IN_PIN = 2;
+const short MODE_PIN = 3;
+const short LCD_LIGHT_PIN = 2;
 
 //////////////////////
 // LCD
@@ -23,8 +24,8 @@ LiquidCrystal_I2C lcd(0x3F,2,1,0,4,5,6,7,3, POSITIVE);
 
 //////////////////////
 // SD
-const String DATA_FILEPATH = "Datalog4.csv";
-const char HEADER[52] = "TS,TEMP,UMID,EXAUST,FAN_ON,FAN_SLP,UMID_T,FAN_SLP_T";
+const String DATA_FILEPATH = "Datalog6.csv";
+const char HEADER[58] = "TS,MODE,TEMP,UMID,EXAUST,FAN_ON,FAN_SLP,UMID_T,FAN_SLP_T";
 File data_file;
 
 //////////////////////
@@ -34,21 +35,21 @@ DHT dht(DHT_PIN, DHTTYPE);
 
 //////////////////////
 // GLOBAL VARIABLES
-short const DELAY_N = 500;
+float const DELAY_N = 10;
 short const UMID_THRESH = 71;
 short const FAN_SLEEP_THRESH = 600;
-int fan_sleep_counter = 0;
+float fan_sleep_counter = 0;
 int fan_active = 0;
 String timestamp;
 String last_timestamp;
-
 
 void setup()
 {
   Serial.begin(9600);
   
   pinMode(FAN_PIN, OUTPUT);
-  pinMode(LCD_LIGHT_IN_PIN, INPUT);
+  pinMode(MODE_PIN, INPUT);
+  pinMode(LCD_LIGHT_PIN, INPUT);
   
   setup_rtc();
   setup_lcd();
@@ -68,27 +69,24 @@ void loop(){
     delay(DELAY_N);
   }
 
-  if (digitalRead(LCD_LIGHT_IN_PIN)){
-    lcd.setBacklight(HIGH);
-  } else {
-    lcd.setBacklight(LOW);
-  }
-
-  Serial.print("LCD_LIGHT_IN_PIN: ");
-  Serial.println(LCD_LIGHT_IN_PIN);
+  //Serial.println("\n");
+  Serial.println(timestamp);
+  //Serial.println(last_timestamp);
+  Serial.println(fan_sleep_counter);
   
   last_timestamp = timestamp;
-  
-  Serial.println("\n");
-  Serial.println(timeRTC());
-  Serial.println(fan_sleep_counter);
-
   float humid = dht.readHumidity();
   float temp = dht.readTemperature();
   
   show_data_temp_humid(temp, humid);
+  
+  if (digitalRead(MODE_PIN)){
+    control_fan(humid);  
+  }
+
   write_data(temp, humid, timestamp);
-  control_fan(humid);
+
+  
   
 }
 
@@ -148,7 +146,7 @@ void control_fan(float humid){
     fan_sleep_counter = 0;
   } else {
     fan_active = 0;
-    fan_sleep_counter++;
+    fan_sleep_counter = fan_sleep_counter++;
   }
 }
 
@@ -175,6 +173,24 @@ void show_data_temp_humid(float t, float h){
     lcd.setCursor(6,1);
     lcd.print(h);
     lcd.setCursor(10,1);
+    lcd.print(" ");
+  }
+
+  if (digitalRead(LCD_LIGHT_PIN)){
+    lcd.setBacklight(HIGH);
+  } else {
+    lcd.setBacklight(LOW);
+  }
+
+  if (timestamp.endsWith("0") || timestamp.endsWith("2") || timestamp.endsWith("4") || timestamp.endsWith("6") || timestamp.endsWith("8")) {
+    lcd.setCursor(4,0);
+    lcd.print(":");
+    lcd.setCursor(4,1);
+    lcd.print(":");
+  } else {
+    lcd.setCursor(4,0);
+    lcd.print(" ");
+    lcd.setCursor(4,1);
     lcd.print(" ");
   }
 }
@@ -207,9 +223,17 @@ void setup_lcd_t_u(){
 
 void write_data(float temp, float humid, String timestamp){
   data_file = SD.open(DATA_FILEPATH, FILE_WRITE);
-  //TIMESTAMP,TEMPERATURA,UMIDADE,EXAUSTOR,FAN_ACTIVE,FAN_SLEEP,UMID_THRESH,FAN_SLEEP_THRESH
+  //TS,MODE,TEMP,UMID,EXAUST,FAN_ON,FAN_SLP,UMID_T,FAN_SLP_T
   if (data_file){
       data_file.print(timestamp);
+      data_file.print(",");
+      
+      if (digitalRead(MODE_PIN)){
+        data_file.print("Control");  
+      } else{
+        data_file.print("Monitor");
+      }
+      
       data_file.print(",");
       data_file.print(temp);
       data_file.print(",");
