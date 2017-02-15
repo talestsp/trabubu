@@ -55,7 +55,7 @@ void setup()
   setup_lcd();
   setup_sd();
   setup_datafile();
-  //SelecionaDataeHora();
+  //set_rtc_time();
   setup_dht();
   setup_lcd_t_u();
 
@@ -273,13 +273,13 @@ String timeRTC(){
   Wire.write(zero);
   Wire.endTransmission();
   Wire.requestFrom(DS1307_ADDRESS, 7);
-  int segundos = ConverteparaDecimal(Wire.read());
-  int minutos = ConverteparaDecimal(Wire.read());
-  int horas = ConverteparaDecimal(Wire.read() & 0b111111);
-  int diadasemana = ConverteparaDecimal(Wire.read()); 
-  int diadomes = ConverteparaDecimal(Wire.read());
-  int mes = ConverteparaDecimal(Wire.read());
-  int ano = ConverteparaDecimal(Wire.read());
+  int segundos = to_decimal(Wire.read());
+  int minutos = to_decimal(Wire.read());
+  int horas = to_decimal(Wire.read() & 0b111111);
+  int diadasemana = to_decimal(Wire.read()); 
+  int diadomes = to_decimal(Wire.read());
+  int mes = to_decimal(Wire.read());
+  int ano = to_decimal(Wire.read());
 
   String timestamp = "";
   
@@ -320,13 +320,13 @@ String timeRTC(){
 
 }
 
-void SelecionaDataeHora()   //Seta a data e a hora do DS1307
+void set_rtc_time()   //Seta a data e a hora do DS1307
 {
-  byte segundos = 10; //Valores de 0 a 59
-  byte minutos = 01; //Valores de 0 a 59
-  byte horas = 17; //Valores de 0 a 23
-  byte diadasemana = 0; //Valores de 0 a 6 - 0=Domingo, 1 = Segunda, etc.
-  byte diadomes = 12; //Valores de 1 a 31
+  byte segundos = 50; //Valores de 0 a 59
+  byte minutos = 37; //Valores de 0 a 59
+  byte horas = 0; //Valores de 0 a 23
+  byte diadasemana = 3; //Valores de 0 a 6 - 0=Domingo, 1 = Segunda, etc.
+  byte diadomes = 15; //Valores de 1 a 31
   byte mes = 2; //Valores de 1 a 12
   byte ano = 17; //Valores de 0 a 99
   Wire.beginTransmission(DS1307_ADDRESS);
@@ -334,24 +334,24 @@ void SelecionaDataeHora()   //Seta a data e a hora do DS1307
 
   //As linhas abaixo escrevem no CI os valores de 
   //data e hora que foram colocados nas variaveis acima
-  Wire.write(ConverteParaBCD(segundos));
-  Wire.write(ConverteParaBCD(minutos));
-  Wire.write(ConverteParaBCD(horas));
-  Wire.write(ConverteParaBCD(diadasemana));
-  Wire.write(ConverteParaBCD(diadomes));
-  Wire.write(ConverteParaBCD(mes));
-  Wire.write(ConverteParaBCD(ano));
+  Wire.write(to_bcd(segundos));
+  Wire.write(to_bcd(minutos));
+  Wire.write(to_bcd(horas));
+  Wire.write(to_bcd(diadasemana));
+  Wire.write(to_bcd(diadomes));
+  Wire.write(to_bcd(mes));
+  Wire.write(to_bcd(ano));
   Wire.write(zero);
   Wire.endTransmission(); 
 }
 
-byte ConverteParaBCD(byte val)
+byte to_bcd(byte val)
 { 
   //Converte o número de decimal para BCD
   return ( (val/10*16) + (val%10) );
 }
 
-byte ConverteparaDecimal(byte val)  
+byte to_decimal(byte val)  
 { 
   //Converte de BCD para decimal
   return ( (val/16*10) + (val%16) );
