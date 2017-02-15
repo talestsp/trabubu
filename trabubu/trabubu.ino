@@ -35,10 +35,10 @@ DHT dht(DHT_PIN, DHTTYPE);
 
 //////////////////////
 // GLOBAL VARIABLES
-float const DELAY_N = 10;
+float const DELAY_N = 100;
 short const UMID_THRESH = 71;
-short const FAN_SLEEP_THRESH = 600;
-float fan_sleep_counter = 0;
+short const FAN_SLEEP_THRESH = 14400;
+int fan_sleep_counter = 0;
 int fan_active = 0;
 String timestamp;
 String last_timestamp;
