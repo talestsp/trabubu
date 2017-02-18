@@ -35,10 +35,10 @@ DHT dht(DHT_PIN, DHTTYPE);
 
 //////////////////////
 // GLOBAL VARIABLES
-float const DELAY_N = 100;
-short const UMID_THRESH = 71;
+float const DELAY_N = 50;
+short const UMID_THRESH = 85;
 short const FAN_SLEEP_THRESH = 14400;
-int fan_sleep_counter = 0;
+int fan_sleep_counter = 14390;
 int fan_active = 0;
 String timestamp;
 String last_timestamp;
@@ -81,7 +81,12 @@ void loop(){
   show_data_temp_humid(temp, humid);
   
   if (digitalRead(MODE_PIN)){
-    control_fan(humid);  
+    control_fan(humid);
+    lcd.setCursor(15,1);
+    lcd.print("C");
+  } else{
+    lcd.setCursor(15,1);
+    lcd.print("M");
   }
 
   write_data(temp, humid, timestamp);
@@ -100,6 +105,8 @@ void setup_lcd(){
   lcd.setBacklight(HIGH);
   lcd.clear();
   lcd.setCursor(0,0);
+  lcd.print("Iniciando...");
+  delay(2000);
   
 }
 
@@ -193,6 +200,7 @@ void show_data_temp_humid(float t, float h){
     lcd.setCursor(4,1);
     lcd.print(" ");
   }
+
 }
 
 
@@ -322,11 +330,11 @@ String timeRTC(){
 
 void set_rtc_time()   //Seta a data e a hora do DS1307
 {
-  byte segundos = 50; //Valores de 0 a 59
-  byte minutos = 37; //Valores de 0 a 59
-  byte horas = 0; //Valores de 0 a 23
+  byte segundos = 20; //Valores de 0 a 59
+  byte minutos = 6; //Valores de 0 a 59
+  byte horas = 19; //Valores de 0 a 23
   byte diadasemana = 3; //Valores de 0 a 6 - 0=Domingo, 1 = Segunda, etc.
-  byte diadomes = 15; //Valores de 1 a 31
+  byte diadomes = 18; //Valores de 1 a 31
   byte mes = 2; //Valores de 1 a 12
   byte ano = 17; //Valores de 0 a 99
   Wire.beginTransmission(DS1307_ADDRESS);
