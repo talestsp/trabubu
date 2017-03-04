@@ -105,6 +105,8 @@ void loop(){
     lcd.print("M");
   }
 
+  control_timers();
+
   write_data(temp, humid, timestamp);
 
 }
@@ -161,6 +163,9 @@ void control_fan(float humid){
     
   }
 
+}
+
+void control_timers(){
   //dealing with overflow
   if (fan_sleep_counter < 0){
     fan_sleep_counter = FAN_SLEEP_THRESH;
