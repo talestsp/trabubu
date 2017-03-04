@@ -26,7 +26,7 @@ LiquidCrystal_I2C lcd(0x3F,2,1,0,4,5,6,7,3, POSITIVE);
 
 //////////////////////
 // SD
-const String DATA_FILEPATH = "Datalog6.csv";
+const String DATA_FILEPATH = "Data.csv";
 const char HEADER[58] = "TS,MODE,TEMP,UMID,EXAUST,FAN_ON,FAN_SLP,UMID_T,FAN_SLP_T";
 File data_file;
 
@@ -38,12 +38,12 @@ DHT dht(DHT_PIN, DHTTYPE);
 
 //////////////////////
 // GLOBAL VARIABLES
-float const DELAY_N = 500;
+float const DELAY_N = 50;
 bool show_th = true;
 short UMID_THRESH = 85;
 short FAN_SLEEP_THRESH = 18000;
-int fan_sleep_counter = FAN_SLEEP_THRESH - 10;
-int fan_active = 0;
+long fan_sleep_counter = FAN_SLEEP_THRESH - 10;
+long fan_active = 0;
 String timestamp;
 String last_timestamp;
 
@@ -52,7 +52,7 @@ void setup()
   Serial.begin(9600);
   
   pinMode(FAN_PIN, OUTPUT);
-  digitalWrite(FAN_PIN, LOW);
+  digitalWrite(FAN_PIN, HIGH);
   
   pinMode(MODE_PIN, INPUT);
   
@@ -80,23 +80,21 @@ void loop(){
     timestamp = timeRTC();
     if (digitalRead(LCD_SWITCH_PIN)){
       lcd_show_time(timestamp);
+      delay(500);
     }
     delay(DELAY_N);
   }
-
-  Serial.println(last_timestamp);
-  //Serial.println(fan_sleep_counter);
   
   last_timestamp = timestamp;
   float humid = dht.readHumidity();
   float temp = dht.readTemperature();
-  
-  show_data_temp_humid(temp, humid);
 
   if (show_th == false){
     setup_lcd_t_u();
     show_th = true;
   }
+
+  show_data_temp_humid(temp, humid);
   
   if (digitalRead(MODE_PIN)){
     control_fan(humid);
@@ -109,8 +107,6 @@ void loop(){
 
   write_data(temp, humid, timestamp);
 
-  
-  
 }
 
 
@@ -124,7 +120,7 @@ void setup_lcd(){
   lcd.clear();
   lcd.setCursor(0,0);
   lcd.print("Iniciando...");
-  delay(2000);
+  delay(1500);
   
 }
 
@@ -165,9 +161,12 @@ void control_fan(float humid){
     
   }
 
+  //dealing with overflow
+  if (fan_sleep_counter < 0){
+    fan_sleep_counter = FAN_SLEEP_THRESH;
+  }
 
-  if (digitalRead(FAN_PIN) == LOW
-  ){
+  if (digitalRead(FAN_PIN) == LOW){
     fan_active++;
     fan_sleep_counter = 0;
   } else {
@@ -271,10 +270,10 @@ void write_data(float temp, float humid, String timestamp){
       data_file.print(humid);
       data_file.print(",");
       
-      if (digitalRead(FAN_PIN)){
-        data_file.print("1");
+      if (digitalRead(FAN_PIN) == LOW){
+        data_file.print("ON");
       } else{
-        data_file.print("0");
+        data_file.print("OFF");
       }
       
       data_file.print(",");
@@ -354,17 +353,25 @@ String timeRTC(){
 void lcd_show_time(String timestamp){
   show_th = false;
   lcd.clear();
+  
+  String yyyy = timestamp.substring(0,4);
+  String mm = timestamp.substring(5,7);
+  String dd = timestamp.substring(8,10);
   lcd.setCursor(0,0);
-  lcd.print("   " + timestamp.substring(0,10) + "   ");
+  lcd.print(" " + dd + " / " + mm + " / " + yyyy);
+
+  String hours = timestamp.substring(11,13);
+  String minutes = timestamp.substring(14,16);
+  String seconds = timestamp.substring(17,19);
   lcd.setCursor(0,1);
-  lcd.print("    " + timestamp.substring(11,19) + "    ");
+  lcd.print("    " + hours + ":" + minutes + ":" + seconds + "    ");
 }
 
 void set_rtc_time()   //Seta a data e a hora do DS1307
 {
-  byte segundos = 20; //Valores de 0 a 59
-  byte minutos = 5; //Valores de 0 a 59
-  byte horas = 2; //Valores de 0 a 23
+  byte segundos = 30; //Valores de 0 a 59
+  byte minutos = 37; //Valores de 0 a 59
+  byte horas = 15; //Valores de 0 a 23
   byte diadasemana = 6; //Valores de 0 a 6 - 0=Domingo, 1 = Segunda, etc.
   byte diadomes = 25; //Valores de 1 a 31
   byte mes = 2; //Valores de 1 a 12
