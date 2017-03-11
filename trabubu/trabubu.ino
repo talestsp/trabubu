@@ -13,6 +13,7 @@ byte zero = 0x00;
 //////////////////////
 // PINS
 const short SD_CS_PIN = 10;
+const short PELTIER_PIN = 9;
 const short DHT_PIN = 7;
 const short FAN_PIN = 8;
 const short MODE_PIN = 0;
@@ -32,17 +33,21 @@ File data_file;
 
 //////////////////////
 // DHT
-#define DHTTYPE DHT11
+#define DHTTYPE DHT22
 DHT dht(DHT_PIN, DHTTYPE);
 
 
 //////////////////////
 // GLOBAL VARIABLES
 float const DELAY_N = 50;
-bool show_th = true;
-short UMID_THRESH = 85;
+short const FREEZE_THRESH = 30;
+short const STOP_FREEZE_THRESH = 28;
+short UMID_THRESH = 87;
 short FAN_SLEEP_THRESH = 18000;
+
 long fan_sleep_counter = FAN_SLEEP_THRESH - 10;
+bool show_th = true;
+bool freezing = false;
 long fan_active = 0;
 String timestamp;
 String last_timestamp;
@@ -53,6 +58,9 @@ void setup()
   
   pinMode(FAN_PIN, OUTPUT);
   digitalWrite(FAN_PIN, HIGH);
+
+  pinMode(PELTIER_PIN, OUTPUT);
+  digitalWrite(PELTIER_PIN, HIGH);
   
   pinMode(MODE_PIN, INPUT);
   
@@ -98,6 +106,7 @@ void loop(){
   
   if (digitalRead(MODE_PIN)){
     control_fan(humid);
+    control_peltier(temp);
     lcd.setCursor(15,1);
     lcd.print("C");
   } else{
@@ -108,7 +117,7 @@ void loop(){
   control_timers();
 
   write_data(temp, humid, timestamp);
-
+ 
 }
 
 
@@ -154,7 +163,8 @@ void setup_dht(){
   dht.begin();
 }
 
-void control_fan(float humid){  
+void control_fan(float humid){
+  
   if (humid >= UMID_THRESH && fan_sleep_counter > FAN_SLEEP_THRESH){
     digitalWrite(FAN_PIN, LOW);//liga o relé
       
@@ -163,6 +173,19 @@ void control_fan(float humid){
     
   }
 
+}
+
+void control_peltier(float temp){
+  
+  if (temp >= FREEZE_THRESH || freezing){
+    digitalWrite(PELTIER_PIN, LOW);
+    freezing = true;
+  }
+  
+  if (temp < STOP_FREEZE_THRESH){
+    digitalWrite(PELTIER_PIN, HIGH);
+    freezing = false;
+  }
 }
 
 void control_timers(){
