@@ -1,3 +1,4 @@
+
 // Programa : Temp. Hum. Control
 // Author : Tales Pimentel
 
@@ -13,12 +14,12 @@ byte zero = 0x00;
 //////////////////////
 // PINS
 const short SD_CS_PIN = 10;
-const short PELTIER_PIN = 9;
-const short DHT_PIN = 7;
-const short FAN_PIN = 8;
+const short PELTIER_PIN = 4;
+const short DHT_PIN = 8;
+const short FAN_PIN = 2;
 const short MODE_PIN = 0;
-const short LCD_LIGHT_PIN = 1;
-const short LCD_SWITCH_PIN = 2;
+const short LCD_LIGHT_PIN = 9;
+const short LCD_SWITCH_PIN = 3;
 
 
 //////////////////////
@@ -40,10 +41,10 @@ DHT dht(DHT_PIN, DHTTYPE);
 //////////////////////
 // GLOBAL VARIABLES
 float const DELAY_N = 50;
-short const FREEZE_THRESH = 30;
-short const STOP_FREEZE_THRESH = 28;
+short const FREEZE_THRESH = 24;
+short const STOP_FREEZE_THRESH = 20;
 short UMID_THRESH = 87;
-short FAN_SLEEP_THRESH = 18000;
+short FAN_SLEEP_THRESH = 1800;
 
 long fan_sleep_counter = FAN_SLEEP_THRESH - 10;
 bool show_th = true;
@@ -65,7 +66,6 @@ void setup()
   pinMode(MODE_PIN, INPUT);
   
   pinMode(LCD_LIGHT_PIN, INPUT);
-  digitalWrite(LCD_LIGHT_PIN, HIGH);
   
   pinMode(LCD_SWITCH_PIN, INPUT);
   
@@ -75,7 +75,7 @@ void setup()
   setup_sd();
   setup_datafile();
   
-  //set_rtc_time();
+//  set_rtc_time();
   setup_dht();
   setup_lcd_t_u();
 
@@ -92,6 +92,8 @@ void loop(){
     }
     delay(DELAY_N);
   }
+
+  Serial.print(timestamp);
   
   last_timestamp = timestamp;
   float humid = dht.readHumidity();
@@ -114,7 +116,7 @@ void loop(){
     lcd.print("M");
   }
 
-  control_timers();
+  control_timers(humid);
 
   write_data(temp, humid, timestamp);
  
@@ -131,7 +133,7 @@ void setup_lcd(){
   lcd.clear();
   lcd.setCursor(0,0);
   lcd.print("Iniciando...");
-  delay(1500);
+  delay(2000);
   
 }
 
@@ -164,37 +166,43 @@ void setup_dht(){
 }
 
 void control_fan(float humid){
-  
-  if (humid >= UMID_THRESH && fan_sleep_counter > FAN_SLEEP_THRESH){
-    digitalWrite(FAN_PIN, LOW);//liga o relé
+
+  if (isnan(humid)){
+    digitalWrite(PELTIER_PIN, HIGH); //OFF relé
+  }
+  else if (humid >= UMID_THRESH && fan_sleep_counter > FAN_SLEEP_THRESH){
+    digitalWrite(FAN_PIN, LOW);//ON relé
       
   }else if (humid < UMID_THRESH){
-    digitalWrite(FAN_PIN, HIGH);//desliga o relé
+    digitalWrite(FAN_PIN, HIGH);//OFF relé
     
   }
 
 }
 
 void control_peltier(float temp){
-  
-  if (temp >= FREEZE_THRESH || freezing){
-    digitalWrite(PELTIER_PIN, LOW);
+
+  if (isnan(temp)){
+    digitalWrite(PELTIER_PIN, HIGH); //OFF relé
+  }
+  else if (temp >= FREEZE_THRESH || freezing){
+    digitalWrite(PELTIER_PIN, LOW); //ON relé
     freezing = true;
   }
   
   if (temp < STOP_FREEZE_THRESH){
-    digitalWrite(PELTIER_PIN, HIGH);
+    digitalWrite(PELTIER_PIN, HIGH); //OFF relé
     freezing = false;
   }
 }
 
-void control_timers(){
+void control_timers(float h){
   //dealing with overflow
   if (fan_sleep_counter < 0){
     fan_sleep_counter = FAN_SLEEP_THRESH;
   }
 
-  if (digitalRead(FAN_PIN) == LOW){
+  if (digitalRead(FAN_PIN) == LOW && !isnan(h)){
     fan_active++;
     fan_sleep_counter = 0;
   } else {
@@ -397,12 +405,12 @@ void lcd_show_time(String timestamp){
 
 void set_rtc_time()   //Seta a data e a hora do DS1307
 {
-  byte segundos = 30; //Valores de 0 a 59
-  byte minutos = 37; //Valores de 0 a 59
-  byte horas = 15; //Valores de 0 a 23
-  byte diadasemana = 6; //Valores de 0 a 6 - 0=Domingo, 1 = Segunda, etc.
-  byte diadomes = 25; //Valores de 1 a 31
-  byte mes = 2; //Valores de 1 a 12
+  byte segundos = 0; //Valores de 0 a 59
+  byte minutos = 17; //Valores de 0 a 59
+  byte horas = 19; //Valores de 0 a 23
+  byte diadasemana = 1; //Valores de 0 a 6 - 0=Domingo, 1 = Segunda, etc.
+  byte diadomes = 10; //Valores de 1 a 31
+  byte mes = 4; //Valores de 1 a 12
   byte ano = 17; //Valores de 0 a 99
   Wire.beginTransmission(DS1307_ADDRESS);
   Wire.write(zero); //Stop no CI para que o mesmo possa receber os dados
